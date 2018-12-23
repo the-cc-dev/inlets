@@ -14,9 +14,11 @@ This is an early prototype to test out some ideas around using websockets.
 
 ## Testing it out
 
-* On the server
+You will need Golang 1.10 or 1.11 on both the exit-node or server and the client.
 
-Start the tunnel server
+* On the server or exit-node
+
+Start the tunnel server on a machine with a publicly-accessible IPv4 IP address such as a VPS.
 
 ```
 go get -u github.com/alexellis/inlets
@@ -53,6 +55,14 @@ Finally with an example server running and a tunnel server and a tunnel client s
 
 ```
 curl -d "hash this" http://192.168.0.101/hash
+```
+
+You will see the traffic pass between the exit node / server and your development machine. You'll see the hash message appear in the logs as below:
+
+```
+~/go/src/github.com/alexellis/hash-browns$ port=3000 go run server.go 
+2018/12/23 20:15:00 Listening on port: 3000
+"hash this"
 ```
 
 Now check the metrics:
