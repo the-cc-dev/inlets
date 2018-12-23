@@ -10,7 +10,7 @@ Why do we need this project? Similar tools such as ngrok or Argo from CloudFlare
 
 ## Status
 
-This is an early prototype to test out some ideas around using websockets.
+This is an early prototype to test out some ideas around using websockets. It is absolutely not suitable for production usage.
 
 ## Testing it out
 
