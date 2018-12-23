@@ -12,6 +12,8 @@ Why do we need this project? Similar tools such as ngrok or Argo from CloudFlare
 
 This is an early prototype to test out some ideas around using websockets. It is absolutely not suitable for production usage.
 
+There is currently no authentication on the server component. The default configuration uses websockets without SSL `ws://`, but to enable encryption you could enable SSL `wss://`.
+
 ## Testing it out
 
 You will need Golang 1.10 or 1.11 on both the exit-node or server and the client.
