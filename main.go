@@ -19,6 +19,8 @@ type Args struct {
 	Remote string
 }
 
+var client *http.Client
+
 func main() {
 	args := Args{}
 	flag.IntVar(&args.Port, "port", 8000, "port for server")
@@ -26,6 +28,11 @@ func main() {
 	flag.StringVar(&args.Remote, "remote", "127.0.0.1:8000", " server address i.e. 127.0.0.1:8000")
 
 	flag.Parse()
+
+	client = http.DefaultClient
+	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
 
 	if args.Server {
 		startServer(args)
@@ -69,7 +76,8 @@ func runClient(args Args) {
 
 			newReq, _ := http.NewRequest(req.Method, fmt.Sprintf("http://%s%s", req.Host, req.URL.String()), bytes.NewReader(body))
 
-			res, resErr := http.DefaultClient.Do(newReq)
+			res, resErr := client.Do(newReq)
+
 			if resErr != nil {
 				log.Println(resErr)
 			} else {
@@ -111,15 +119,20 @@ func proxyHandler(msg chan *http.Response, outgoing chan *http.Request) func(w h
 
 		log.Println("writing response from tunnel", res.ContentLength)
 
-		for k, v := range res.Header {
-			res.Header.Set(k, v[0])
-		}
-
+		copyHeaders(w.Header(), &res.Header)
 		w.WriteHeader(res.StatusCode)
 
 		innerBody, _ := ioutil.ReadAll(res.Body)
 
 		w.Write(innerBody)
+	}
+}
+
+func copyHeaders(destination http.Header, source *http.Header) {
+	for k, v := range *source {
+		vClone := make([]string, len(v))
+		copy(vClone, v)
+		(destination)[k] = vClone
 	}
 }
 
