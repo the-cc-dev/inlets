@@ -58,12 +58,12 @@ func runClient(args Args) {
 				log.Println("read:", err)
 				return
 			}
-			log.Printf("recv: %s", message)
+			log.Printf("recv: %d", len(message))
 			buf := bytes.NewBuffer(message)
 			bufReader := bufio.NewReader(buf)
 			req, _ := http.ReadRequest(bufReader)
 			fmt.Println("RequestURI", req.RequestURI)
-			fmt.Println("req", req)
+			// fmt.Println("req", req)
 
 			body, _ := ioutil.ReadAll(req.Body)
 
@@ -74,11 +74,12 @@ func runClient(args Args) {
 				log.Println(resErr)
 			} else {
 				log.Printf("Upstream tunnel res: %s\n", res.Status)
-				// body, _ := ioutil.ReadAll(res.Body)
 
 				buf2 := new(bytes.Buffer)
 
 				res.Write(buf2)
+
+				fmt.Println("Whole response", buf2.Len())
 
 				c.WriteMessage(websocket.TextMessage, buf2.Bytes())
 			}
@@ -88,13 +89,7 @@ func runClient(args Args) {
 	<-done
 }
 
-// func request(c *websocket.Conn, method, uri, host string) {
-
-// 	c.WriteMessage(websocket.TextMessage,
-// 		[]byte(fmt.Sprintf("%s %s HTTP/1.1\r\nHost: %s\r\n\r\n", method, uri, host)))
-// }
-
-func proxyHandler(msg chan []byte, outgoing chan *http.Request) func(w http.ResponseWriter, r *http.Request) {
+func proxyHandler(msg chan *http.Response, outgoing chan *http.Request) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Reverse proxy", r.Host, r.Method, r.URL.String())
@@ -107,20 +102,29 @@ func proxyHandler(msg chan []byte, outgoing chan *http.Request) func(w http.Resp
 		req, _ := http.NewRequest(r.Method, fmt.Sprintf("http://localhost:3000%s", r.URL.Path),
 			bytes.NewReader(body))
 
-		log.Printf("Request to tunnel: %s\n", string(body))
+		// log.Printf("Request to tunnel: %s\n", string(body))
 		outgoing <- req
 
 		log.Println("waiting for response")
 
 		res := <-msg
 
-		log.Println("writing response from tunnel")
-		w.Write(res)
+		log.Println("writing response from tunnel", res.ContentLength)
+
+		for k, v := range res.Header {
+			res.Header.Set(k, v[0])
+		}
+
+		w.WriteHeader(res.StatusCode)
+
+		innerBody, _ := ioutil.ReadAll(res.Body)
+
+		w.Write(innerBody)
 	}
 }
 
 func startServer(args Args) {
-	ch := make(chan []byte)
+	ch := make(chan *http.Response)
 	outgoing := make(chan *http.Request)
 	http.HandleFunc("/ws", serveWs(ch, outgoing))
 	http.HandleFunc("/", proxyHandler(ch, outgoing))
@@ -129,7 +133,7 @@ func startServer(args Args) {
 	}
 }
 
-func serveWs(msg chan []byte, outgoing chan *http.Request) func(w http.ResponseWriter, r *http.Request) {
+func serveWs(msg chan *http.Response, outgoing chan *http.Request) func(w http.ResponseWriter, r *http.Request) {
 
 	var upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
@@ -159,16 +163,15 @@ func serveWs(msg chan []byte, outgoing chan *http.Request) func(w http.ResponseW
 				}
 
 				if msgType == websocket.TextMessage {
-					log.Printf("Server recv: %s", message)
+					// log.Printf("Server recv: %s", message)
 
 					reader := bytes.NewReader(message)
 					scanner := bufio.NewReader(reader)
-					res, resErr := http.ReadResponse(scanner, nil)
-					log.Println(res, resErr)
+					res, _ := http.ReadResponse(scanner, nil)
+					// log.Println(res, resErr)
 
-					body, _ := ioutil.ReadAll(res.Body)
-					msg <- body
-
+					// body, _ := ioutil.ReadAll(res.Body)
+					msg <- res
 				}
 			}
 		}()
@@ -178,7 +181,7 @@ func serveWs(msg chan []byte, outgoing chan *http.Request) func(w http.ResponseW
 			for {
 				fmt.Println("wait for outboundRequest")
 				outboundRequest := <-outgoing
-				fmt.Println("outboundRequest", outboundRequest)
+				// fmt.Println("outboundRequest", outboundRequest)
 				buf := new(bytes.Buffer)
 
 				outboundRequest.Write(buf)
