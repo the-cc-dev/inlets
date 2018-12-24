@@ -14,9 +14,10 @@ import (
 )
 
 type Args struct {
-	Port   int
-	Server bool
-	Remote string
+	Port     int
+	Server   bool
+	Remote   string
+	Upstream string
 }
 
 var client *http.Client
@@ -26,8 +27,11 @@ func main() {
 	flag.IntVar(&args.Port, "port", 8000, "port for server")
 	flag.BoolVar(&args.Server, "server", true, "server or client")
 	flag.StringVar(&args.Remote, "remote", "127.0.0.1:8000", " server address i.e. 127.0.0.1:8000")
+	flag.StringVar(&args.Upstream, "upstream", "http://127.0.0.1:3000", "upstream server i.e. http://127.0.0.1:3000")
 
 	flag.Parse()
+
+	log.Printf("Upstream: %s", args.Upstream)
 
 	client = http.DefaultClient
 	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
@@ -97,7 +101,7 @@ func runClient(args Args) {
 	<-done
 }
 
-func proxyHandler(msg chan *http.Response, outgoing chan *http.Request) func(w http.ResponseWriter, r *http.Request) {
+func proxyHandler(msg chan *http.Response, outgoing chan *http.Request, upstream string) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Reverse proxy", r.Host, r.Method, r.URL.String())
@@ -107,7 +111,7 @@ func proxyHandler(msg chan *http.Response, outgoing chan *http.Request) func(w h
 
 		body, _ := ioutil.ReadAll(r.Body)
 
-		req, _ := http.NewRequest(r.Method, fmt.Sprintf("http://localhost:3000%s", r.URL.Path),
+		req, _ := http.NewRequest(r.Method, fmt.Sprintf("%s%s", upstream, r.URL.Path),
 			bytes.NewReader(body))
 
 		// log.Printf("Request to tunnel: %s\n", string(body))
@@ -140,7 +144,7 @@ func startServer(args Args) {
 	ch := make(chan *http.Response)
 	outgoing := make(chan *http.Request)
 	http.HandleFunc("/ws", serveWs(ch, outgoing))
-	http.HandleFunc("/", proxyHandler(ch, outgoing))
+	http.HandleFunc("/", proxyHandler(ch, outgoing, args.Upstream))
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", args.Port), nil); err != nil {
 		log.Fatal(err)
 	}
