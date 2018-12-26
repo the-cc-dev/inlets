@@ -8,6 +8,8 @@ inlets is a reverse proxy and HTTP tunnel built to help you expose your internal
 
 Why do we need this project? Similar tools such as ngrok or Argo from CloudFlare are expensive and closed-source. Other open-source tunnel tools are designed to set up a static tunnel. inlets aims to dynamically bind and discover your local services to DNS entries with automated TLS certificates to a public exit node.
 
+![](docs/inlets.png)
+
 Initial goals:
 
 * automatically create endpoints on exit-node based upon client definitions
