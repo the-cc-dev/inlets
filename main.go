@@ -69,16 +69,19 @@ func runClient(args Args) {
 				log.Println("read:", err)
 				return
 			}
+
+			// proxyToUpstream
 			log.Printf("recv: %d", len(message))
 			buf := bytes.NewBuffer(message)
 			bufReader := bufio.NewReader(buf)
 			req, _ := http.ReadRequest(bufReader)
 			fmt.Println("RequestURI", req.RequestURI)
-			// fmt.Println("req", req)
 
 			body, _ := ioutil.ReadAll(req.Body)
 
 			newReq, _ := http.NewRequest(req.Method, fmt.Sprintf("http://%s%s", req.Host, req.URL.String()), bytes.NewReader(body))
+
+			copyHeaders(newReq.Header, &req.Header)
 
 			res, resErr := client.Do(newReq)
 
@@ -113,6 +116,7 @@ func proxyHandler(msg chan *http.Response, outgoing chan *http.Request, upstream
 
 		req, _ := http.NewRequest(r.Method, fmt.Sprintf("%s%s", upstream, r.URL.Path),
 			bytes.NewReader(body))
+		copyHeaders(req.Header, &r.Header)
 
 		// log.Printf("Request to tunnel: %s\n", string(body))
 		outgoing <- req
