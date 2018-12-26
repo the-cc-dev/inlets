@@ -8,6 +8,23 @@ inlets is a reverse proxy and HTTP tunnel built to help you expose your internal
 
 Why do we need this project? Similar tools such as ngrok or Argo from CloudFlare are expensive and closed-source. Other open-source tunnel tools are designed to set up a static tunnel. inlets aims to dynamically bind and discover your local services to DNS entries with automated TLS certificates to a public exit node.
 
+Initial goals:
+
+* automatically create endpoints on exit-node based upon client definitions
+  * multiplex sites on same port throug use of DNS / host entries 
+* link encryption using SSL over websockets (`wss://`)
+* automatic reconnect
+* authentication using service account or basic auth
+* automatic TLS provisioning for endpoints using [cert-magic](https://github.com/mholt/certmagic)
+  * configure staging or production LetsEncrypt issuer using HTTP01 challenge
+
+Stretch goals:
+
+* discover and configure endpoints for Ingress definitions from Kubernetes
+* configuration to run "exit-node" as serverless container with Azure ACI / AWS Fargate
+* automatic configuration of DNS / A records
+* configure staging or production LetsEncrypt issuer using DNS01 challenge
+
 ## Status
 
 This is an early prototype to test out some ideas around using websockets. It is absolutely not suitable for production usage.
