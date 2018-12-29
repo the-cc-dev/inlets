@@ -124,3 +124,32 @@ Exit-node:
 ```
 while [ true ] ; do sleep 5 && ./inlets -server=true -upstream=http://192.168.0.28:8080 ; done
 ```
+
+* Run as a deployment on Kubernetes
+
+You can even run `inlets` within your Kubernetes in Docker (kind) cluster to get ingress (incoming network) for your services such as the OpenFaaS gateway:
+
+```
+apiVersion: apps/v1beta1 # for versions before 1.6.0 use extensions/v1beta1
+kind: Deployment
+metadata:
+  name: inlets
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: inlets
+    spec:
+      containers:
+      - name: inlets
+        image: alexellis2/inlets-runtime:0.2a
+        imagePullPolicy: Always
+        command: ["./inlets"]
+        args:
+        - "-server=false"
+        - "-upstream=http://gateway.openfaas:8080"
+        - "-remote=replace-with-your-public-ip"
+```
+
+Replace the line: `- "-remote=replace-with-your-public-ip"`
