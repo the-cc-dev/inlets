@@ -143,13 +143,17 @@ spec:
     spec:
       containers:
       - name: inlets
-        image: alexellis2/inlets-runtime:0.2a
+        image: alexellis2/inlets-runtime:0.2.1
         imagePullPolicy: Always
         command: ["./inlets"]
         args:
         - "-server=false"
         - "-upstream=http://gateway.openfaas:8080"
-        - "-remote=replace-with-your-public-ip"
+        - "-remote=your-public-ip"
 ```
 
-Replace the line: `- "-remote=replace-with-your-public-ip"`
+Replace the line: `- "-remote=your-public-ip"` with the public IP belonging to your VPS.
+
+* What is the cheapest viable VPS?
+
+The cheapest option is probably Scaleway at 1.99 EUR / month using the "1-XS" from the "Start" tier. 
