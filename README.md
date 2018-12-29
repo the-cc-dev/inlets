@@ -1,6 +1,6 @@
 # inlets
-an open-source HTTP tunnel for development
 
+Expose your local endpoints to the Internet
 
 ## Intro
 
