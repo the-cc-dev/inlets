@@ -93,7 +93,9 @@ func runClient(args Args) {
 				buf2 := new(bytes.Buffer)
 
 				res.Write(buf2)
-
+				if res.Body != nil {
+					defer res.Body.Close()
+				}
 				fmt.Println("Whole response", buf2.Len())
 
 				c.WriteMessage(websocket.TextMessage, buf2.Bytes())
@@ -108,6 +110,7 @@ func proxyHandler(msg chan *http.Response, outgoing chan *http.Request, upstream
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Reverse proxy", r.Host, r.Method, r.URL.String())
+
 		if r.Body != nil {
 			defer r.Body.Close()
 		}
@@ -116,6 +119,7 @@ func proxyHandler(msg chan *http.Response, outgoing chan *http.Request, upstream
 
 		req, _ := http.NewRequest(r.Method, fmt.Sprintf("%s%s", upstream, r.URL.Path),
 			bytes.NewReader(body))
+
 		copyHeaders(req.Header, &r.Header)
 
 		// log.Printf("Request to tunnel: %s\n", string(body))
@@ -127,11 +131,10 @@ func proxyHandler(msg chan *http.Response, outgoing chan *http.Request, upstream
 
 		log.Println("writing response from tunnel", res.ContentLength)
 
-		copyHeaders(w.Header(), &res.Header)
-		w.WriteHeader(res.StatusCode)
-
 		innerBody, _ := ioutil.ReadAll(res.Body)
 
+		copyHeaders(w.Header(), &res.Header)
+		w.WriteHeader(res.StatusCode)
 		w.Write(innerBody)
 	}
 }
